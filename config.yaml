@@ -1,0 +1,44 @@
+schema: spec-driven
+
+# Project context, injected into every artifact instruction.
+# CLAUDE.md is loaded separately by Claude Code; this only adds what shapes artifacts.
+context: |
+  MVP of the Product Workspace module for a regulated financial-services environment.
+  Source of truth for behaviour: docs/Product-Workspace-Design-Phase1-v0.5-Review-Edition.pdf
+  (design doc "Product Workspace Design, Phase 1 v0.5 (Review Edition)").
+  When the design doc and an artifact disagree, call it out in the artifact as an open question;
+  never silently pick one.
+  The non-negotiable invariants, storage rules, closed 409 error-code set and delivery order
+  in CLAUDE.md apply to every change.
+  Stack: Python 3.12, uv, FastAPI, PostgreSQL (SQLAlchemy 2 + Alembic), MinIO as S3,
+  Kafka and Platform ledger stubbed, AI proposals from fixtures (no ADK until add-adk-generation).
+
+rules:
+  proposal:
+    - Name the delivery stream from CLAUDE.md this change belongs to; a change covers exactly one stream.
+    - Cite the design doc sections (number and title) the change implements.
+    - State what is explicitly out of scope, including anything deferred to a later stream.
+  specs:
+    - Requirements and scenarios only; technical reasoning belongs in design.md.
+    - Use the design doc's names (ItemVersion, content_rev, membership_rev, lifecycle_rev, operation_id, review_token); no synonyms.
+    - Every 409 code the change can return gets a scenario that provokes it and states nothing was mutated.
+    - Every new command gets scenarios for receipt replay (same fingerprint) and OPERATION_ID_REUSED (different fingerprint).
+    - Only use error codes from the closed set in CLAUDE.md; a new code must be called out in the proposal as a spec change.
+  design:
+    - Record the guard order and transaction boundaries for every write path.
+    - List each decision that should become a durable record in docs/decisions/, with a proposed file name.
+    - Flag any place where the design doc is ambiguous or where code would diverge from it.
+  tasks:
+    - Each task is small enough to land and pass `make verify` on its own.
+    - Order tasks so that tests for a behaviour land with or before the behaviour.
+    - Include tasks for the decision records listed in design.md.
+    - Never include a task to commit; the human reviews and commits each change.
+
+operations:
+  apply:
+    guidance:
+      - Work tasks.md top to bottom; check a task only after `make verify` passes.
+      - Stop at the first task that cannot be completed and explain why; do not reorder or skip.
+  archive:
+    guidance:
+      - Before archiving, confirm `make verify` passes and every task is checked.
